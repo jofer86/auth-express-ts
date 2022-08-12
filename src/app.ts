@@ -1,4 +1,5 @@
 import express from 'express';
+import path from 'path';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import colors from 'colors';
@@ -8,7 +9,7 @@ import { Application, Request, Response, NextFunction } from 'express';
 import { errorHandler } from './middleware/error.middleware';
 
 // Env vars
-dotenv.config({ path: './config/config.env' });
+dotenv.config({ path: path.resolve(__dirname, './config/config.env') });
 // Routes
 connectDB();
 
@@ -27,11 +28,11 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5050;
 
 const server = app.listen(PORT, (): void =>
-  console.log(`Server running in ${process.env.NODE_ENV} mode on port: ${PORT}`.cyan)
+  console.log(`Server running in ${process.env.NODE_ENV} mode on port: ${PORT}`)
 );
 
 process.on('unhandledRejection', (err: any) => {
-  console.log(`Error: ${err.message}`.red.bold);
+  console.log(`Error: ${err.message}`);
   // Close server exit process
   server.close(() => process.exit(1));
 });
