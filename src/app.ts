@@ -7,6 +7,7 @@ import morgan from 'morgan';
 import { connectDB } from './config/db.config';
 import { Application, Request, Response, NextFunction } from 'express';
 import { errorHandler } from './middleware/error.middleware';
+import AuthRoutes from './controllers/Auth/Auth.routes';
 
 // Env vars
 dotenv.config({ path: path.resolve(__dirname, './config/config.env') });
@@ -22,7 +23,7 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // Routes
-// app.use('/api/v1/users', users);
+app.use('/api/v1/auth', AuthRoutes);
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5050;
