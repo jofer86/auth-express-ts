@@ -1,7 +1,8 @@
 import { Schema } from 'mongoose';
-import { User, UserRoles } from './User';
+import { UserModel, UserRoles } from './User';
+const colors = require('colors');
 
-export const UserSchema = new Schema<User>({
+export const UserSchema = new Schema<UserModel>({
   name: {
     type: String,
     required: [true, 'Name is required']
@@ -12,13 +13,13 @@ export const UserSchema = new Schema<User>({
     unique: true,
     match: [
       /^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:.[a-zA-Z0-9-]+)*$/,
-      'Please enter a valid email'
+      'Please enter a valid email'.red
     ]
   },
   role: {
     type: String,
-    enum: [UserRoles.USER, UserRoles.ADMIN],
-    default: UserRoles.USER
+    enum: ['admin', 'user'],
+    default: 'user'
   },
   password: {
     type: String,

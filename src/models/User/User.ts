@@ -1,7 +1,7 @@
 import { model } from 'mongoose';
 import { UserSchema } from './User.schema';
 
-export interface User {
+export interface UserModel {
   name: string;
   email: string;
   role: string;
@@ -16,4 +16,4 @@ export enum UserRoles {
   USER = 'user'
 }
 
-export const UserModel = model<User>('User', UserSchema);
+export const User = model<UserModel>('User', UserSchema);
