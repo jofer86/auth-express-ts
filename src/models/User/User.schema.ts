@@ -1,3 +1,4 @@
+import { NextFunction } from 'express';
 import { Schema } from 'mongoose';
 import { UserModel, UserRoles } from './User';
 const colors = require('colors');
