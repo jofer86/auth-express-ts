@@ -2,6 +2,8 @@ import { asyncHandler } from '../../middleware/async.middleware';
 import ErrorResponse from '../../utils/ErrorResponse';
 import { User, UserModel } from '../../models/User/User';
 import { HydratedDocument, Model, Schema } from 'mongoose';
+import { Response } from 'express';
+import { JWT_COOKIE_EXPIRE, NODE_ENV } from '../../config/env-varialbes';
 
 // @desc    Register user
 // @route   POST /api/v1/auth/register
@@ -32,14 +34,26 @@ export const login = asyncHandler(async (req, res, next) => {
   }
 
   const user = await User.findOne({ email }).select('+password');
-
   if (!user) return next(new ErrorResponse('Invalid credentials', 401));
 
-  // User is matched??
   const isMatched = await user.matchPassword(password);
-
   if (!isMatched) return next(new ErrorResponse('Invalid credentials', 401));
-  // Create token
-  const token = user.signAndReturnJwtToken();
-  res.status(200).json({ success: true, token });
+
+  sendTokenResponse(user, 200, res);
 });
+
+// Get token from model, create cookie and send response
+const sendTokenResponse = (user: UserModel, statusCode: number, res: Response) => {
+  const token = user.signAndReturnJwtToken();
+
+  const options = {
+    expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    httpOnly: true,
+    secure: NODE_ENV === 'production'
+  };
+
+  res.status(statusCode).cookie('token', token, options).json({
+    success: true,
+    token
+  });
+};
