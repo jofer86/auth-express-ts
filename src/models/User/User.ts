@@ -1,4 +1,5 @@
 import { NextFunction } from 'express';
+import crypto from 'crypto';
 import { HydratedDocument, model } from 'mongoose';
 import bcrypt from 'bcryptjs';
 import jwt, { Secret } from 'jsonwebtoken';
@@ -11,10 +12,11 @@ export interface UserModel {
   email: string;
   role: string;
   password: string;
-  resetPassWordToken: string;
-  resetPassWordExpires: Date;
+  resetPasswordToken: string | undefined;
+  resetPasswordExpire: Date | undefined;
   createdAt: Date;
   signAndReturnJwtToken: () => string;
+  getResetPasswordToken: () => Promise<string>;
   matchPassword: (enteredPassword: string) => Promise<boolean>;
 }
 
@@ -50,8 +52,8 @@ export const UserSchema = new Schema<UserModel>(
       minlength: [6, 'Password must be at least 6 characters'],
       select: false
     },
-    resetPassWordToken: String,
-    resetPassWordExpires: Date,
+    resetPasswordToken: String,
+    resetPasswordExpire: Date,
     createdAt: {
       type: Date,
       default: Date.now
@@ -66,12 +68,21 @@ export const UserSchema = new Schema<UserModel>(
       },
       async matchPassword(enteredPassword): Promise<boolean> {
         return await bcrypt.compare(enteredPassword, this.password);
+      },
+      getResetPasswordToken(): string {
+        const resetToken = crypto.randomBytes(20).toString('hex');
+        this.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+        this.resetPasswordExpire = (Date.now() + 10 * 60 * 1000) as any;
+
+        return resetToken;
       }
     }
   }
 );
 
 UserSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) return next();
+
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
 });
