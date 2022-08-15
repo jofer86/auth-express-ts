@@ -2,7 +2,7 @@ import { asyncHandler } from '../../middleware/async.middleware';
 import ErrorResponse from '../../utils/ErrorResponse';
 import { User, UserModel } from '../../models/User/User';
 import { Response } from 'express';
-import { JWT_COOKIE_EXPIRE, NODE_ENV } from '../../config/env-varialbes';
+import { JWT_COOKIE_EXPIRE, JWT_EXPIRE, NODE_ENV } from '../../config/env-varialbes';
 
 // @desc    Register user
 // @route   POST /api/v1/auth/register
@@ -46,10 +46,15 @@ export const login = asyncHandler(async (req, res, next) => {
   sendTokenResponse(user, 200, res);
 });
 
+export const getMe = asyncHandler(async (req, res, next) => {
+  const user = await User.findById(req.user.id);
+  res.status(200).json({ success: true, data: user });
+});
+
 // Get token from model, create cookie and send response
 const sendTokenResponse = (user: UserModel, statusCode: number, res: Response) => {
   const token = user.signAndReturnJwtToken();
-  const daysToExpire = 30 * 24 * 60 * 60 * 1000;
+  const daysToExpire = parseInt(JWT_COOKIE_EXPIRE as string) * 24 * 60 * 60 * 1000;
 
   const options = {
     expires: new Date(Date.now() + daysToExpire),

@@ -3,6 +3,7 @@ import { HydratedDocument, model } from 'mongoose';
 import bcrypt from 'bcryptjs';
 import jwt, { Secret } from 'jsonwebtoken';
 import { Schema } from 'mongoose';
+import { JWT_EXPIRE, JWT_SECRET } from '../../config/env-varialbes';
 const colors = require('colors');
 
 export interface UserModel {
@@ -22,8 +23,7 @@ export enum UserRoles {
   USER = 'user'
 }
 
-let secret: Secret = process.env.JWT_SECRET || 'secret';
-
+let secret: Secret = JWT_SECRET as string;
 export const UserSchema = new Schema<UserModel>(
   {
     name: {
@@ -60,7 +60,7 @@ export const UserSchema = new Schema<UserModel>(
     methods: {
       signAndReturnJwtToken(): string {
         return jwt.sign({ id: this._id }, secret, {
-          expiresIn: process.env.JWT_EXPIRE || '7d'
+          expiresIn: JWT_EXPIRE || '7d'
         });
       },
       async matchPassword(enteredPassword): Promise<boolean> {
