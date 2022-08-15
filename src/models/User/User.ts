@@ -22,6 +22,8 @@ export enum UserRoles {
   USER = 'user'
 }
 
+let secret: Secret = process.env.JWT_SECRET || 'secret';
+
 export const UserSchema = new Schema<UserModel>(
   {
     name: {
@@ -72,7 +74,5 @@ UserSchema.pre('save', async function (next) {
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
 });
-
-let secret: Secret = process.env.JWT_SECRET || 'secret';
 
 export const User = model<UserModel>('User', UserSchema);

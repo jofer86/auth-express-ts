@@ -1,7 +1,6 @@
 import { asyncHandler } from '../../middleware/async.middleware';
 import ErrorResponse from '../../utils/ErrorResponse';
 import { User, UserModel } from '../../models/User/User';
-import { HydratedDocument, Model, Schema } from 'mongoose';
 import { Response } from 'express';
 import { JWT_COOKIE_EXPIRE, NODE_ENV } from '../../config/env-varialbes';
 
@@ -21,6 +20,11 @@ export const register = asyncHandler(async (req, res, next) => {
   // Create token
   const token = user.signAndReturnJwtToken();
   res.status(200).json({ success: true, token });
+});
+
+export const users = asyncHandler(async (req, res, next) => {
+  const users = await User.find();
+  res.status(200).json({ success: true, data: users });
 });
 
 // @desc    Register user
@@ -45,9 +49,10 @@ export const login = asyncHandler(async (req, res, next) => {
 // Get token from model, create cookie and send response
 const sendTokenResponse = (user: UserModel, statusCode: number, res: Response) => {
   const token = user.signAndReturnJwtToken();
+  const daysToExpire = 30 * 24 * 60 * 60 * 1000;
 
   const options = {
-    expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    expires: new Date(Date.now() + daysToExpire),
     httpOnly: true,
     secure: NODE_ENV === 'production'
   };
