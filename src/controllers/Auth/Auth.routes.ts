@@ -1,9 +1,9 @@
 import express, { Router } from 'express';
 import { getMe, login, register, users } from './Auth.controller';
-import { proctect } from '../../middleware/auth.middleware';
+import { proctect, authorize } from '../../middleware/auth.middleware';
 
 const router: Router = express.Router();
-router.route('/users').get(proctect, users);
+router.route('/users').get(proctect, authorize('admin'), users);
 router.get('/me', proctect, getMe);
 router.route('/register').post(register);
 router.route('/login').post(login);

@@ -37,7 +37,7 @@ export let proctect = asyncHandler(async (req: any, res, next) => {
 });
 
 // Grant access to specific roles
-export const authorize = (...roles: any) => {
+export const authorize = (...roles: string[]) => {
   return (req: any, res: Response, next: NextFunction) => {
     if (!roles.includes(req.user.role)) {
       return next(
