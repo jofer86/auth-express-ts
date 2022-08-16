@@ -10,6 +10,7 @@ import { Application, Request, Response, NextFunction } from 'express';
 import { errorHandler } from './middleware/error.middleware';
 import AuthRoutes from './controllers/Auth/Auth.routes';
 import 'colors';
+import mongoSanitize from 'express-mongo-sanitize';
 
 // Env vars
 dotenv.config({ path: path.resolve(__dirname, './config/config.env') });
@@ -24,6 +25,8 @@ app.use(cookieParser());
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
+
+app.use(mongoSanitize());
 
 // Routes
 app.use('/api/v1/auth', AuthRoutes);

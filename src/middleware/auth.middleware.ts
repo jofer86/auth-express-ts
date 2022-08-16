@@ -15,6 +15,7 @@ export let proctect = asyncHandler(async (req: any, res, next) => {
     token = req.headers.authorization.split(' ')[1];
     // Set token from cookie
   }
+  // Toggle to allow cooki token auth.
   // else if (req.cookies.token) {
   //   token = req.cookies.token;
   // }

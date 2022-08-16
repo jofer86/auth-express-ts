@@ -116,6 +116,14 @@ export const resetPassowrd = asyncHandler(async (req, res, next) => {
   }
 });
 
+export const logout = asyncHandler(async (req, res, next) => {
+  res.cookie('token', 'none', {
+    expires: new Date(Date.now() + 10 * 1000),
+    httpOnly: true
+  });
+  res.status(200).json({ success: true, data: 'Logged out' });
+});
+
 // Get token from model, create cookie and send response
 const sendTokenResponse = (user: UserModel, statusCode: number, res: Response) => {
   const token = user.signAndReturnJwtToken();

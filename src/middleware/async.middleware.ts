@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 interface NewRequest extends Request {
   user?: any;
+  cookie?: any;
 }
 
 type AsyncHandler = (req: NewRequest, res: Response, next: NextFunction) => Promise<void>;
