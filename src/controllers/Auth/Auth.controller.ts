@@ -4,6 +4,7 @@ import { User, UserModel } from '../../models/User/User';
 import { Response } from 'express';
 import { JWT_COOKIE_EXPIRE, JWT_EXPIRE, NODE_ENV } from '../../config/env-varialbes';
 import { sendMail } from '../../utils/SendEmail';
+import crypto from 'crypto';
 
 // @desc    Register user
 // @route   POST /api/v1/auth/register
@@ -85,6 +86,33 @@ export const forgotPassword = asyncHandler(async (req, res, next) => {
     user.resetPasswordExpire = undefined;
     await user.save({ validateBeforeSave: false });
     return next(new ErrorResponse('Email could not be sent', 500));
+  }
+});
+
+export const resetPassowrd = asyncHandler(async (req, res, next) => {
+  let resetToken: string = req.params.resetToken;
+  try {
+    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    const user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpire: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return next(new ErrorResponse('Invalid token', 400));
+    }
+
+    // Set new password
+
+    user.password = req.body.password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+    await user.save();
+
+    sendTokenResponse(user, 200, res);
+  } catch (err) {
+    console.error(err);
+    next();
   }
 });
 
