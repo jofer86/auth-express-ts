@@ -11,6 +11,10 @@ import { errorHandler } from './middleware/error.middleware';
 import AuthRoutes from './controllers/Auth/Auth.routes';
 import 'colors';
 import mongoSanitize from 'express-mongo-sanitize';
+import helmet from 'helmet';
+const xss = require('xss-clean');
+import rateLimit from 'express-rate-limit';
+import hpp from 'hpp';
 
 // Env vars
 dotenv.config({ path: path.resolve(__dirname, './config/config.env') });
@@ -27,6 +31,18 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 app.use(mongoSanitize());
+// Add security headers
+app.use(helmet());
+// Prevent XSS attacks
+app.use(xss());
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 mins
+  max: 100
+});
+app.use(limiter);
+// Prevent http param pollution
+app.use(hpp());
 
 // Routes
 app.use('/api/v1/auth', AuthRoutes);
