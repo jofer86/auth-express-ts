@@ -15,6 +15,7 @@ import helmet from 'helmet';
 const xss = require('xss-clean');
 import rateLimit from 'express-rate-limit';
 import hpp from 'hpp';
+import cors from 'cors';
 
 // Env vars
 dotenv.config({ path: path.resolve(__dirname, './config/config.env') });
@@ -43,6 +44,8 @@ const limiter = rateLimit({
 app.use(limiter);
 // Prevent http param pollution
 app.use(hpp());
+// Enable CORS
+app.use(cors());
 
 // Routes
 app.use('/api/v1/auth', AuthRoutes);
