@@ -5,27 +5,31 @@ import { Response } from 'express';
 import { JWT_COOKIE_EXPIRE, JWT_EXPIRE, NODE_ENV } from '../../config/env-varialbes';
 import { sendMail } from '../../utils/SendEmail';
 import crypto from 'crypto';
+import { UserRepository } from '../../models/User/User.repository';
+import { MoreThan } from 'typeorm';
+
+
 
 // @desc    Register user
 // @route   POST /api/v1/auth/register
 // @access  Public
 export const register = asyncHandler(async (req, res, next) => {
   const { name, email, password, role } = req.body;
-
-  // Create user
-  const user = await User.create({
+   // Create user
+  const user = UserRepository.create({
     name,
     email,
     password,
     role
   });
+  
   // Create token
   const token = user.signAndReturnJwtToken();
   res.status(200).json({ success: true, token });
 });
 
 export const users = asyncHandler(async (req, res, next) => {
-  const users = await User.find();
+  const users = await UserRepository.find();
   res.status(200).json({ success: true, data: users });
 });
 
@@ -39,7 +43,7 @@ export const login = asyncHandler(async (req, res, next) => {
     return next(new ErrorResponse('Please provide an email and password', 400));
   }
 
-  const user = await User.findOne({ email }).select('+password');
+  const user = await UserRepository.findOneByOrFail({ email });
   if (!user) return next(new ErrorResponse('Invalid credentials', 401));
 
   const isMatched = await user.matchPassword(password);
@@ -49,7 +53,7 @@ export const login = asyncHandler(async (req, res, next) => {
 });
 
 export const getMe = asyncHandler(async (req, res, next) => {
-  const user = await User.findById(req.user.id);
+  const user = await UserRepository.findOneBy({ id: req.user.id });
   res.status(200).json({ success: true, data: user });
 });
 
@@ -57,7 +61,7 @@ export const getMe = asyncHandler(async (req, res, next) => {
 // @route POST /api/v1/auth/forgot-password
 // @access Public
 export const forgotPassword = asyncHandler(async (req, res, next) => {
-  const user = await User.findOne({ email: req.body.email });
+  const user = await UserRepository.findOneBy({ email: req.body.email });
 
   if (!user) {
     return next(new ErrorResponse('There is no user with that email', 404));
@@ -66,7 +70,7 @@ export const forgotPassword = asyncHandler(async (req, res, next) => {
   // Get reset token
   const resetToken = user.getResetPasswordToken();
 
-  await user.save({ validateBeforeSave: false });
+  await UserRepository.save(user);
 
   // Create reset url
   const resetUrl = `${req.protocol}://${req.get('host')}/api/v1/auth/reset-password/${resetToken}`;
@@ -84,7 +88,7 @@ export const forgotPassword = asyncHandler(async (req, res, next) => {
     console.error(err);
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
-    await user.save({ validateBeforeSave: false });
+    await UserRepository.save(user);
     return next(new ErrorResponse('Email could not be sent', 500));
   }
 });
@@ -93,10 +97,12 @@ export const resetPassowrd = asyncHandler(async (req, res, next) => {
   let resetToken: string = req.params.resetToken;
   try {
     const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-    const user = await User.findOne({
-      resetPasswordToken: hashedToken,
-      resetPasswordExpire: { $gt: Date.now() }
-    });
+    const [user] = await UserRepository.find({
+      where: {
+        resetPasswordToken: hashedToken,
+        resetPasswordExpire: MoreThan(new Date())
+      }
+    })
 
     if (!user) {
       return next(new ErrorResponse('Invalid token', 400));
@@ -107,7 +113,7 @@ export const resetPassowrd = asyncHandler(async (req, res, next) => {
     user.password = req.body.password;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
-    await user.save();
+    await UserRepository.save(user);
 
     sendTokenResponse(user, 200, res);
   } catch (err) {
@@ -125,7 +131,7 @@ export const logout = asyncHandler(async (req, res, next) => {
 });
 
 // Get token from model, create cookie and send response
-const sendTokenResponse = (user: UserModel, statusCode: number, res: Response) => {
+const sendTokenResponse = (user: User, statusCode: number, res: Response) => {
   const token = user.signAndReturnJwtToken();
   const daysToExpire = parseInt(JWT_COOKIE_EXPIRE as string) * 24 * 60 * 60 * 1000;
 

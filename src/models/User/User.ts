@@ -1,10 +1,15 @@
 import { NextFunction } from 'express';
 import crypto from 'crypto';
-import { HydratedDocument, model } from 'mongoose';
 import bcrypt from 'bcryptjs';
 import jwt, { Secret } from 'jsonwebtoken';
-import { Schema } from 'mongoose';
 import { JWT_EXPIRE, JWT_SECRET } from '../../config/env-varialbes';
+import { Entity, Column, PrimaryGeneratedColumn, BeforeInsert } from 'typeorm';
+import {
+  Length,
+  IsEmail,
+  IsDate,
+  IsNotEmpty,
+} from 'class-validator';
 const colors = require('colors');
 
 export interface UserModel {
@@ -26,65 +31,68 @@ export enum UserRoles {
 }
 
 let secret: Secret = JWT_SECRET as string;
-export const UserSchema = new Schema<UserModel>(
-  {
-    name: {
-      type: String,
-      required: [true, 'Name is required']
-    },
-    email: {
-      type: String,
-      required: [true, 'Email is required'],
-      unique: true,
-      match: [
-        /^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:.[a-zA-Z0-9-]+)*$/,
-        'Please enter a valid email'.red
-      ]
-    },
-    role: {
-      type: String,
-      enum: [UserRoles.ADMIN, UserRoles.USER],
-      default: UserRoles.USER
-    },
-    password: {
-      type: String,
-      required: [true, 'Password is required'],
-      minlength: [6, 'Password must be at least 6 characters'],
-      select: false
-    },
-    resetPasswordToken: String,
-    resetPasswordExpire: Date,
-    createdAt: {
-      type: Date,
-      default: Date.now
-    }
-  },
-  {
-    methods: {
-      signAndReturnJwtToken(): string {
-        return jwt.sign({ id: this._id }, secret, {
-          expiresIn: JWT_EXPIRE || '7d'
-        });
-      },
-      async matchPassword(enteredPassword): Promise<boolean> {
-        return await bcrypt.compare(enteredPassword, this.password);
-      },
-      getResetPasswordToken(): string {
-        const resetToken = crypto.randomBytes(20).toString('hex');
-        this.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-        this.resetPasswordExpire = (Date.now() + 10 * 60 * 1000) as any;
 
-        return resetToken;
-      }
-    }
+@Entity()
+export class User {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column()
+  @IsNotEmpty()
+  @Length(3, 20)
+  name: string
+
+  @Column()
+  @IsNotEmpty()
+  @IsEmail()
+  email: string
+
+  @Column({
+    type: 'enum',
+    enum: UserRoles,
+    default: UserRoles.USER
+  })
+  @IsNotEmpty()
+  role: string
+
+  @Column()
+  @IsNotEmpty()
+  @Length(8, 30)
+  password: string
+
+  @Column({ type: 'varchar', nullable: true})
+  resetPasswordToken: string | undefined;
+
+  @Column({ type: 'varchar', nullable: true})
+  resetPasswordExpire: Date | undefined;
+
+  @Column()
+  @IsDate()
+  createdAt: Date
+
+  
+  signAndReturnJwtToken(): string {
+    return jwt.sign({ id: this.id }, secret, {
+      expiresIn: JWT_EXPIRE || '7d'
+    });
   }
-);
 
-UserSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+  async matchPassword(enteredPassword: string): Promise<boolean> {
+    return await bcrypt.compare(enteredPassword, this.password);
+  } 
 
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-});
+  getResetPasswordToken(): string {
+    const resetToken = crypto.randomBytes(20).toString('hex');
+    this.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    this.resetPasswordExpire = (Date.now() + 10 * 60 * 1000) as any;
 
-export const User = model<UserModel>('User', UserSchema);
+    return resetToken;
+  }
+
+  @BeforeInsert()
+  async hashPassword(next: NextFunction): Promise<void> {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+  }
+}
+

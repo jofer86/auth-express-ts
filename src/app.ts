@@ -16,11 +16,37 @@ const xss = require('xss-clean');
 import rateLimit from 'express-rate-limit';
 import hpp from 'hpp';
 import cors from 'cors';
+import { DataSource } from 'typeorm';
+import { User } from './models/User/User';
+
+const myDataSource = new DataSource({
+  type: 'postgres',
+  host: 'localhost',
+  port: 5432,
+  username: 'jorge',
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  entities: [User],
+  synchronize: true,
+  logging: false
+});
+
+myDataSource
+    .initialize()
+    .then(() => {
+        console.log("Data Source has been initialized!")
+    })
+    .catch((err) => {
+        console.error("Error during Data Source initialization:", err)
+    })
+
+
+
 
 // Env vars
 dotenv.config({ path: path.resolve(__dirname, './config/config.env') });
 // Routes
-connectDB();
+// connectDB();
 
 const app: Application = express();
 app.use(express.json());
@@ -31,7 +57,7 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
-app.use(mongoSanitize());
+// app.use(mongoSanitize());
 // Add security headers
 app.use(helmet());
 // Prevent XSS attacks
@@ -48,8 +74,8 @@ app.use(hpp());
 app.use(cors());
 
 // Routes
-app.use('/api/v1/auth', AuthRoutes);
-app.use(errorHandler);
+// app.use('/api/v1/auth', AuthRoutes);
+// app.use(errorHandler);
 
 const PORT = process.env.PORT || 5050;
 
